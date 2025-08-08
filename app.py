@@ -1,44 +1,34 @@
+# app.py
 import streamlit as st
-import numpy as np
-import pandas as pd
-import random
-from utils import extract_features, predict_emotion
-import time
+from pages import live_detection, location_page, twilio_alert
+from auth import check_authentication
 
-st.set_page_config(page_title="Embracelet Demo", layout="centered")
+st.set_page_config(page_title="Embracelet", layout="wide")
 
-st.title("💜 Embracelet - Real-Time GBV Detection Demo")
+# --- Login & Signup ---
+if not check_authentication():
+    st.stop()  # prevent access to the rest of the app
 
-# Simulate vitals
-hr = random.randint(80, 160)
-temp = round(random.uniform(36.5, 39.5), 1)
+# --- Navigation Sidebar ---
+st.sidebar.title("Embracelet Navigation")
+page = st.sidebar.radio("Go to", ["🏠 Home", "🎤 Live Emotion Detection", "📍 Live Location", "📳 Emergency Alerts"])
 
-st.subheader("📍 Live Vitals (Simulated)")
-st.metric("Heart Rate (BPM)", hr, delta=None)
-st.metric("Body Temperature (°C)", temp, delta=None)
+# --- Page Router ---
+if page == "🏠 Home":
+    st.title("Welcome to Embracelet")
+    st.markdown("""
+    #### Your AI-powered safety net in crisis moments.
+    - Detects emotional distress in real time from speech.
+    - Sends alerts with your location using Twilio.
+    - Keeps a record of incidents for evidence and reporting.
+    """)
+    st.image("static/hero.png")  # Optional: hero image
 
-# Upload audio
-st.subheader("🎙️ Voice Emotion Detection")
-audio_file = st.file_uploader("Upload a scream/speech audio", type=["wav"])
+elif page == "🎤 Live Emotion Detection":
+    live_detection.show()
 
-if audio_file:
-    st.audio(audio_file, format='audio/wav')
-    features = extract_features(audio_file)
-    emotion, confidence = predict_emotion(features)
-    
-    st.success(f"Detected Emotion: **{emotion.upper()}** with {int(confidence * 100)}% confidence")
+elif page == "📍 Live Location":
+    location_page.show()
 
-    if emotion.lower() in ['fear', 'anger'] and hr > 130:
-        st.error("⚠️ High stress detected! Alert triggered.")
-        st.write("📩 Sending alert to emergency contact...")
-        time.sleep(1)
-        st.success("✅ Alert sent.")
-
-# Show event timeline
-st.subheader("📊 Timeline of Detected Events")
-df = pd.DataFrame({
-    "Time": ["08:12", "08:17", "08:19"],
-    "Emotion": ["Fear", "Fear", "Anger"],
-    "HeartRate": [145, 138, 142]
-})
-st.dataframe(df)
+elif page == "📳 Emergency Alerts":
+    twilio_alert.show()
